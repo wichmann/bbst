@@ -2,8 +2,7 @@
 import uuid
 import random
 import logging
-from dataclasses import dataclass
-
+from dataclasses import dataclass, field
 
 logger = logging.getLogger('bbst.data')
 
@@ -98,12 +97,11 @@ def generate_good_readable_password():
     logger.debug('New password generated: ' + ''.join(password))
     return ''.join(password)
 
-
 @dataclass(frozen=True)
 class Teacher:
-    guid: str = uuid.uuid4()
+    guid: str = field(default_factory=uuid.uuid4)
     last_name: str = ''
     first_name: str = ''
     email: str = ''
     username: str = ''
-    password: str = generate_good_readable_password()
+    password: str = field(default_factory=generate_good_readable_password)
