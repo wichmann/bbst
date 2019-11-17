@@ -45,6 +45,29 @@ current_path = BASE_PATH
 current_repo = ''
 
 
+################################  Helper ######################################
+
+def list_all_repos():
+    return [d for d in BASE_PATH.iterdir() if d.is_dir() and (d/REPO_TOKEN).exists()]
+
+def add_new_teacher(new_teacher):
+    current_repo_list = current_path / TEACHER_LIST_FILENAME
+    l = read_teacher_list(current_repo_list)
+    l.append(new_teacher)
+    write_teacher_list(l, current_repo_list)
+
+def import_repo_into_repo(import_repo, destination_repo):
+    """
+    Reads a given import file in CSV format and copies it into a given directory.
+    """
+    # TODO: Expand function to import user from file if teachers list already exists
+    destination_file = BASE_PATH / destination_repo / TEACHER_LIST_FILENAME
+    source_file = BASE_PATH / import_repo / TEACHER_LIST_FILENAME
+    if destination_file.exists():
+        print('Fehler: Liste existiert bereits in angegebenen Repo.')
+        return
+    shutil.copy(source_file, destination_file)
+
 ################################  Handler #####################################
 
 def create_new_repo(args):
@@ -91,21 +114,6 @@ def close_repo():
     current_path = BASE_PATH
     current_repo = ''
 
-def import_repo_into_repo(import_repo, destination_repo):
-    """
-    Reads a given import file in CSV format and copies it into a given directory.
-    """
-    # TODO: Expand function to import user from file if teachers list already exists
-    destination_file = BASE_PATH / destination_repo / TEACHER_LIST_FILENAME
-    source_file = BASE_PATH / import_repo / TEACHER_LIST_FILENAME
-    if destination_file.exists():
-        print('Fehler: Liste existiert bereits in angegebenen Repo.')
-        return
-    shutil.copy(source_file, destination_file)
-
-def list_all_repos():
-    return [d for d in BASE_PATH.iterdir() if d.is_dir() and (d/REPO_TOKEN).exists()]
-
 def on_list_command():
     if current_repo:
         current_repo_list = current_path / TEACHER_LIST_FILENAME
@@ -135,12 +143,6 @@ def on_add_command(session):
                           username=generate_username(first_name, last_name))
     add_new_teacher(new_teacher)
 
-def add_new_teacher(new_teacher):
-    current_repo_list = current_path / TEACHER_LIST_FILENAME
-    l = read_teacher_list(current_repo_list)
-    l.append(new_teacher)
-    write_teacher_list(l, current_repo_list)
-
 def on_update(args):
     if not current_repo:
         print('Fehler: Aktualisierung ist nur in Repo möglich.')
@@ -159,7 +161,7 @@ def on_update(args):
     for t in deleted_teachers:
         print('Lehrer {} sollte gelöscht werden.'.format(t))
 
-def on_import_command(args):
+def on_import(args):
     if not current_repo:
         print('Fehler: Import nur in Repo möglich.')
         return
@@ -186,6 +188,34 @@ def on_export():
     teacher_list = read_teacher_list(current_repo_list)
     output_file = current_path / USER_INFO_FILENAME
     create_user_info_document(str(output_file), teacher_list)
+
+def on_amend(args, session):
+    if not current_repo:
+        print('Fehler: Änderungen sind nur in Repo möglich.')
+        return
+    if not args:
+        print('Fehler: Keine GUID angegeben.')
+        return
+    current_repo_list = current_path / TEACHER_LIST_FILENAME
+    l = read_teacher_list(current_repo_list)
+    chosen_teacher = [t for t in l if t.guid.startswith(args[0])]
+    if len(chosen_teacher) != 1:
+        print('Fehler: Kein oder zu viele Übereinstimmungen gefunden.')
+        return
+    # ask for changed information
+    first_name = session.prompt('Geben Sie den neuen Vornamen ein: ', default=chosen_teacher[0].first_name)
+    last_name = session.prompt('Geben Sie den neuen Nachnamen ein: ', default=chosen_teacher[0].last_name)
+    email = session.prompt('Geben Sie die neue Email-Adresse ein: ', default=chosen_teacher[0].email)
+    username = session.prompt('Geben Sie den neuen Benutzernamen ein: ', default=chosen_teacher[0].username)
+    # remove old teacher and add amended teacher
+    l.remove(chosen_teacher[0])
+    l.append(Teacher(last_name=last_name, first_name=first_name, email=email,
+                     guid=chosen_teacher[0].guid, username=username,
+                     password=chosen_teacher[0].password))
+    write_teacher_list(l, current_repo_list)
+
+def on_delete(args):
+    pass
 
 ##################################  CLI  ######################################
 
@@ -230,7 +260,7 @@ def main_loop(test, verbose):
     "Simple tool for managing user accounts for teachers at a vocational school."
 
     # TODO: Add command 'amend' to change and 'delete' to remove entry.
-    commands = ['new', 'import', 'export', 'open', 'close', 'list', 'add', 'update', 'help', 'exit', 'quit']
+    commands = ['new', 'import', 'export', 'open', 'close', 'list', 'add', 'update', 'help', 'exit', 'quit', 'amend', 'delete']
     session = prepare_cli_interface(commands)
 
     while True:
@@ -260,9 +290,13 @@ def main_loop(test, verbose):
         elif command == 'list':
             on_list_command()
         elif command == 'import':
-            on_import_command(args)
+            on_import(args)
         elif command == 'export':
             on_export()
+        elif command == 'amend':
+            on_amend(args, session)
+        elif command == 'delete':
+            on_delete(args)
         elif command == 'add':
             on_add_command(session)
         elif command == 'update':
