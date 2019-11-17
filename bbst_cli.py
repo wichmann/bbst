@@ -16,7 +16,7 @@ from dataclasses import asdict, astuple
 
 import click
 from tabulate import tabulate
-from prompt_toolkit import PromptSession
+from prompt_toolkit import PromptSession, prompt
 from prompt_toolkit.styles import Style
 from prompt_toolkit.completion import Completer, Completion, WordCompleter, PathCompleter, merge_completers
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
@@ -132,12 +132,16 @@ def on_list_command():
         else:
             print('Keine Repos gefunden!')
 
-def on_add_command(session):
+def on_add_command():
     if not current_repo:
         print('Fehler: Hinzufügen von Lehrern nur in Repo möglich.')
         return
-    first_name = session.prompt('Vorname: ')
-    last_name = session.prompt('Name: ')
+    first_name = ''
+    last_name = ''
+    while not first_name:
+        first_name = prompt('Vorname: ').strip()
+    while not last_name:
+        last_name = prompt('Name: ').strip()
     new_teacher = Teacher(last_name=last_name, first_name=first_name,
                           email=generate_mail_address(last_name),
                           username=generate_username(first_name, last_name))
@@ -189,7 +193,7 @@ def on_export():
     output_file = current_path / USER_INFO_FILENAME
     create_user_info_document(str(output_file), teacher_list)
 
-def on_amend(args, session):
+def on_amend(args):
     if not current_repo:
         print('Fehler: Änderungen sind nur in Repo möglich.')
         return
@@ -204,10 +208,10 @@ def on_amend(args, session):
         print('Fehler: Kein oder zu viele Übereinstimmungen gefunden.')
         return
     # ask for changed information
-    first_name = session.prompt('Geben Sie den neuen Vornamen ein: ', default=chosen_teacher[0].first_name)
-    last_name = session.prompt('Geben Sie den neuen Nachnamen ein: ', default=chosen_teacher[0].last_name)
-    email = session.prompt('Geben Sie die neue Email-Adresse ein: ', default=chosen_teacher[0].email)
-    username = session.prompt('Geben Sie den neuen Benutzernamen ein: ', default=chosen_teacher[0].username)
+    first_name = prompt('Geben Sie den neuen Vornamen ein: ', default=chosen_teacher[0].first_name)
+    last_name = prompt('Geben Sie den neuen Nachnamen ein: ', default=chosen_teacher[0].last_name)
+    email = prompt('Geben Sie die neue Email-Adresse ein: ', default=chosen_teacher[0].email)
+    username = prompt('Geben Sie den neuen Benutzernamen ein: ', default=chosen_teacher[0].username)
     # remove old teacher and add amended teacher
     l.remove(chosen_teacher[0])
     l.append(Teacher(last_name=last_name, first_name=first_name, email=email,
@@ -229,9 +233,11 @@ def on_delete(args):
     if len(chosen_teacher) != 1:
         print('Fehler: Kein oder zu viele Übereinstimmungen gefunden.')
         return
-    # remove teacher from list
-    l.remove(chosen_teacher[0])
-    write_teacher_list(l, current_repo_list)
+    teacher_name = '{} {}'.format(chosen_teacher[0].first_name, chosen_teacher[0].last_name)
+    really = prompt('Soll der Lehrer "{}" wirklich gelöscht werden? [y/N] '.format(teacher_name))
+    if really.lower() == 'y':
+        l.remove(chosen_teacher[0])
+        write_teacher_list(l, current_repo_list)
 
 ##################################  CLI  ######################################
 
@@ -310,11 +316,11 @@ def main_loop(test, verbose):
         elif command == 'export':
             on_export()
         elif command == 'amend':
-            on_amend(args, session)
+            on_amend(args)
         elif command == 'delete':
             on_delete(args)
         elif command == 'add':
-            on_add_command(session)
+            on_add_command()
         elif command == 'update':
             on_update(args)
         else:
