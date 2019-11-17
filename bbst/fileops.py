@@ -22,7 +22,7 @@ def read_bbsv_file(update_file):
     with open(update_file, 'r', encoding='utf-8-sig') as csvfile:
         reader = csv.DictReader(csvfile, delimiter=';', fieldnames=fieldnames)
         for i, row in enumerate(reader):
-            guid = row['guid'].replace('{','').replace('}','')
+            guid = row['guid'].replace('{','').replace('}','').lower()
             #email = row['email']
             #short_name = row['short_name']
             last_name = row['last_name']
