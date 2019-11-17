@@ -6,8 +6,10 @@ bbst - BBS Teacher Management
 @author: Christian Wichmann
 """
 
+import sys
 import shutil
 import logging
+import logging.handlers
 from pathlib import Path
 from datetime import datetime
 from dataclasses import asdict, astuple
@@ -23,32 +25,27 @@ from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.shortcuts import message_dialog, yes_no_dialog, input_dialog, ProgressBar
 from prompt_toolkit.history import FileHistory
 
-from reportlab.pdfgen import canvas
-from reportlab.lib import colors
-from reportlab.lib.units import cm, mm
-from reportlab.lib.enums import TA_CENTER
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-from reportlab.platypus.flowables import Image, PageBreak
-
 from bbst.data import Teacher, generate_mail_address, generate_username
 from bbst.fileops import read_bbsv_file, read_teacher_list, write_teacher_list
+from bbst.pdf import create_user_info_document
 
 
 logger = logging.getLogger('bbst')
 
 
+LOG_FILENAME = 'bbst.log'
 REPO_TOKEN = '.bbst'
 TEACHER_LIST_FILENAME = 'teacher_list.csv'
+HISTORY_FILE = '.bbst-history-file'
+USER_INFO_FILENAME = 'Anschreiben.pdf'
+BASE_PATH = Path().cwd()
 
-
-base_path = Path().cwd()
-current_path = base_path
+# TODO: Eliminate global variables!
+current_path = BASE_PATH
 current_repo = ''
 
 
-####################################  Handler ##############################################
+################################  Handler #####################################
 
 def create_new_repo(args):
     if current_repo:
@@ -83,15 +80,15 @@ def open_repo(args):
         print('Fehler: Kein Name für das zu öffnende Repo angegeben.')
         return
     repo_name = args[0]
-    if not base_path / repo_name in list_all_repos():
+    if not BASE_PATH / repo_name in list_all_repos():
         print('Fehler: Verzeichnis ist kein gültiges BBST-Repo.')
         return
-    current_path = base_path / repo_name
+    current_path = BASE_PATH / repo_name
     current_repo = repo_name
 
 def close_repo():
     global current_path, current_repo
-    current_path = base_path
+    current_path = BASE_PATH
     current_repo = ''
 
 def import_repo_into_repo(import_repo, destination_repo):
@@ -99,15 +96,15 @@ def import_repo_into_repo(import_repo, destination_repo):
     Reads a given import file in CSV format and copies it into a given directory.
     """
     # TODO: Expand function to import user from file if teachers list already exists
-    destination_file = base_path / destination_repo / TEACHER_LIST_FILENAME
-    source_file = base_path / import_repo / TEACHER_LIST_FILENAME
+    destination_file = BASE_PATH / destination_repo / TEACHER_LIST_FILENAME
+    source_file = BASE_PATH / import_repo / TEACHER_LIST_FILENAME
     if destination_file.exists():
         print('Fehler: Liste existiert bereits in angegebenen Repo.')
         return
     shutil.copy(source_file, destination_file)
 
 def list_all_repos():
-    return [d for d in base_path.iterdir() if d.is_dir() and (d/REPO_TOKEN).exists()]
+    return [d for d in BASE_PATH.iterdir() if d.is_dir() and (d/REPO_TOKEN).exists()]
 
 def on_list_command():
     if current_repo:
@@ -170,17 +167,11 @@ def on_import_command(args):
         print('Fehler: Kein Dateipfad angegeben.')
         return
     import_repo_name = args[0]
-    import_repo = Path().cwd() / import_repo_name
+    import_repo = BASE_PATH / import_repo_name
     if not import_repo in list_all_repos():
         print('Fehler: Kein gültiges zu importierendes Repo angegeben.')
         return
     print(f'Importiere Liste aus Repo {import_repo_name}...')
-    #result = yes_no_dialog(title='Import durchführen?',
-    #                       text=f'Wirklich die Datei {import_repo} in aktuelles Repo importieren?')
-    #if result:
-    #    with ProgressBar() as pb:  
-    #        for i in pb(range(800)):
-    #            pass
     import_repo_into_repo(import_repo, current_repo)
 
 def on_export():
@@ -193,64 +184,18 @@ def on_export():
         print('Fehler: Aktuelles Repo enthält noch keine Listendatei.')
         return
     teacher_list = read_teacher_list(current_repo_list)
-    output_file = current_path / 'Anschreiben.pdf'
+    output_file = current_path / USER_INFO_FILENAME
     create_user_info_document(str(output_file), teacher_list)
 
-PAGE_WIDTH, PAGE_HEIGHT = A4
-BORDER_HORIZONTAL = 2.0*cm
-BORDER_VERTICAL = 1.5*cm
-
-def build_footer(canvas, doc):
-    today = datetime.today().strftime('%d.%m.%Y')
-    canvas.saveState()
-    canvas.setFont('Helvetica', 10)
-    canvas.drawString(BORDER_HORIZONTAL, BORDER_VERTICAL, today)
-    canvas.drawRightString(PAGE_WIDTH-BORDER_HORIZONTAL, BORDER_VERTICAL, "Seite {}".format(doc.page))
-    canvas.restoreState()
-
-def create_user_info_document(output_file, teacher_list):
-    logger.debug('Creating user info document...')
-    subject_paragraph_style = ParagraphStyle(name='Normal', fontSize=12, leading=18, fontName='Times-Bold', spaceAfter=0.75*cm)
-    main_paragraph_style = ParagraphStyle(name='Normal', fontSize=11, leading=18, fontName='Times-Roman', spaceAfter=0.25*cm)
-    data_paragraph_style = ParagraphStyle(name='Normal', fontSize=12, fontName='Courier', spaceAfter=0.5*cm, alignment=TA_CENTER)
-    # prepare data for document
-    title = 'Benutzerdaten'
-    author = 'bbst - BBS Teacher Management'
-    logo = Image('logo.png', width=PAGE_WIDTH-2*BORDER_HORIZONTAL, height=5.2445*cm)
-    logo.hAlign = 'CENTER'
-    info_text_1 = 'Liebe Kollegin, lieber Kollege,<br/><br/>ihre Benutzerdaten lauten wie folgt:'
-    info_text_2 = """Diese Zugangsdaten erlauben die Rechnernutzung in allen Räumen mit dem Logodidact-System.
-    Außerdem kann es zum Zugriff auf den Stundenplan über WebUntis und die Lern­plattform Moodle genutzt werden.<br/>
-    In Logodidact, Moodle und WebUntis lässt sich das Passwort ändern. Allerdings gilt jede Änderung nur für
-    das jeweilige System! Sollten Sie ihr Passwort vergessen haben, besteht bei Moodle und Webuntis die
-    Möglichkeit, sich ein neues Passwort per Mail zusenden zu lassen.<br/>
-    Weitere Informationen finden Sie im Moodle-Kurs: <a>https://moodle.nibis.de/bbs_osb/course/view.php?id=7</a>.
-    Bei allen weiteren Fragen können Sie sich gerne bei mir melden.<br/><br/>
-    Viele Grüße<br/>&nbsp;&nbsp;&nbsp;&nbsp;Christian Wichmann<br/>&nbsp;&nbsp;&nbsp;&nbsp;wichmann@bbs-os-brinkstr.de"""
-    # building document
-    doc = SimpleDocTemplate(output_file, author=author, title=title)
-    story = []
-    for t in teacher_list:
-        user_data = '{}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{}'.format(t.username, t.password)
-        #story.append(logo)
-        story.append(Spacer(1,1.75*cm))
-        story.append(Paragraph('<b>{}</b>'.format(title), subject_paragraph_style))
-        story.append(Paragraph(info_text_1, main_paragraph_style))
-        story.append(Paragraph(user_data, data_paragraph_style))
-        story.append(Paragraph(info_text_2, main_paragraph_style))
-        story.append(PageBreak())
-    doc.build(story, onFirstPage=build_footer, onLaterPages=build_footer)
+##################################  CLI  ######################################
 
 def prepare_completers(commands):
     completer_commands = WordCompleter(commands)
     repos = [str(r.parts[-1:][0]) for r in list_all_repos()]
     completer_repos = WordCompleter(repos)
-    def filter_csv(filename):
-        return str(filename).endswith('.csv')
-    def paths_for_completion():
-        return [current_path.cwd()]
-    completer_files = PathCompleter(file_filter=filter_csv, min_input_len=2, get_paths=paths_for_completion)
-    return merge_completers([completer_files, completer_commands, completer_repos])
+    completer_files = PathCompleter(file_filter=lambda filename: str(filename).endswith('.csv'),
+                                    min_input_len=0, get_paths=lambda : [current_path])
+    return merge_completers([completer_commands, completer_repos, completer_files])
 
 def prepare_key_bindings():
     bindings = KeyBindings()
@@ -270,8 +215,8 @@ def prepare_cli_interface(commands):
         # toolbar
         'bottom-toolbar': '#333333 bg:#ffcc00'
     })
-    toolbar_text = f' Basisverzeichnis: {base_path}  -  Zum Beenden Strg+d oder Strg+c drücken.'
-    our_history = FileHistory('.bbst-history-file')
+    toolbar_text = f' Basisverzeichnis: {BASE_PATH}  -  Zum Beenden Strg+d oder Strg+c drücken.'
+    our_history = FileHistory(HISTORY_FILE)
     session = PromptSession(auto_suggest=AutoSuggestFromHistory(), history=our_history, style=style,
                             completer=prepare_completers(commands), key_bindings=prepare_key_bindings(),
                             bottom_toolbar=toolbar_text, complete_while_typing=True)
@@ -284,9 +229,7 @@ def prepare_cli_interface(commands):
 def main_loop(test, verbose):
     "Simple tool for managing user accounts for teachers at a vocational school."
 
-    global base_path, current_path, current_repo
-
-    # TODO: Add command 'amend' to change entry.
+    # TODO: Add command 'amend' to change and 'delete' to remove entry.
     commands = ['new', 'import', 'export', 'open', 'close', 'list', 'add', 'update', 'help', 'exit', 'quit']
     session = prepare_cli_interface(commands)
 
@@ -306,6 +249,7 @@ def main_loop(test, verbose):
         if command == 'exit' or command == 'quit':
             return
         elif command == 'help':
+            # TODO: Add more information on available commands.
             print('Mögliche Befehle: ', ', '.join(commands))
         elif command == 'new':
             create_new_repo(args)
@@ -324,7 +268,20 @@ def main_loop(test, verbose):
         elif command == 'update':
             on_update(args)
         else:
-            print('Fehler: Befehl ungültig. Mögliche Befehle: ', ', '.join(commands))
+            print('Fehler: Befehl ungültig. Verwenden Sie den Befehl "help" für weitere Informationen.')
+
+def create_logger():
+    # create logger for this application
+    global logger
+    logger.setLevel(logging.DEBUG)
+    log_to_file = logging.handlers.RotatingFileHandler(LOG_FILENAME, maxBytes=262144,
+                                                       backupCount=5, encoding='utf-8')
+    log_to_file.setLevel(logging.DEBUG)
+    logger.addHandler(log_to_file)
+    log_to_screen = logging.StreamHandler(sys.stdout)
+    log_to_screen.setLevel(logging.INFO)
+    logger.addHandler(log_to_screen)
 
 if __name__ == '__main__':
-    main_loop(False, False)
+    create_logger()
+    main_loop()
