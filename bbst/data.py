@@ -105,3 +105,10 @@ class Teacher:
     email: str = ''
     username: str = ''
     password: str = field(default_factory=generate_good_readable_password)
+    # signals that teacher was added after initial import into Repo, either by the add or update command
+    added: bool = False
+    # signals that teacher was deleted after initial import into Repo by the delete command
+    deleted: bool = False
+
+    def __str__(self):
+        return '<{} {}>'.format(self.first_name, self.last_name)

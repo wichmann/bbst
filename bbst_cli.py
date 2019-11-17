@@ -12,7 +12,7 @@ import logging
 import logging.handlers
 from pathlib import Path
 from datetime import datetime
-from dataclasses import asdict, astuple
+from dataclasses import asdict, astuple, replace
 
 import click
 from tabulate import tabulate
@@ -61,6 +61,7 @@ def import_repo_into_repo(import_repo, destination_repo):
     Reads a given import file in CSV format and copies it into a given directory.
     """
     # TODO: Expand function to import user from file if teachers list already exists
+    # TODO: Change function to import teachers and remove users marked as deleted and reset added flag!!!!!
     destination_file = BASE_PATH / destination_repo / TEACHER_LIST_FILENAME
     source_file = BASE_PATH / import_repo / TEACHER_LIST_FILENAME
     if destination_file.exists():
@@ -70,7 +71,7 @@ def import_repo_into_repo(import_repo, destination_repo):
 
 ################################  Handler #####################################
 
-def create_new_repo(args):
+def create_repo(args):
     if current_repo:
         print('Fehler: Bitte verlassen sie zuerst das aktuelle Repo.')
         return
@@ -114,7 +115,7 @@ def close_repo():
     current_path = BASE_PATH
     current_repo = ''
 
-def on_list_command():
+def on_list():
     if current_repo:
         current_repo_list = current_path / TEACHER_LIST_FILENAME
         if not current_repo_list.exists():
@@ -132,7 +133,7 @@ def on_list_command():
         else:
             print('Keine Repos gefunden!')
 
-def on_add_command():
+def on_add():
     if not current_repo:
         print('Fehler: Hinzufügen von Lehrern nur in Repo möglich.')
         return
@@ -143,7 +144,7 @@ def on_add_command():
     while not last_name:
         last_name = prompt('Name: ').strip()
     new_teacher = Teacher(last_name=last_name, first_name=first_name,
-                          email=generate_mail_address(last_name),
+                          email=generate_mail_address(last_name), added=True,
                           username=generate_username(first_name, last_name))
     add_new_teacher(new_teacher)
 
@@ -163,7 +164,8 @@ def on_update(args):
         add_new_teacher(t)
     print('{} neue Lehrer hinzugefügt.'.format(len(new_teachers)))
     for t in deleted_teachers:
-        print('Lehrer {} sollte gelöscht werden.'.format(t))
+        on_delete([t.guid])
+        print('Lehrer {} wurde als gelöscht markiert.'.format(t))
 
 def on_import(args):
     if not current_repo:
@@ -214,13 +216,13 @@ def on_amend(args):
     username = prompt('Geben Sie den neuen Benutzernamen ein: ', default=chosen_teacher[0].username)
     # remove old teacher and add amended teacher
     l.remove(chosen_teacher[0])
-    l.append(Teacher(last_name=last_name, first_name=first_name, email=email,
-                     guid=chosen_teacher[0].guid, username=username,
-                     password=chosen_teacher[0].password))
+    l.append(Teacher(last_name=last_name, first_name=first_name, email=email, username=username,
+                     guid=chosen_teacher[0].guid, password=chosen_teacher[0].password))
     write_teacher_list(l, current_repo_list)
 
-def on_delete(args):
+def on_delete(args, purge=False):
     if not current_repo:
+        # TODO: Add feature to delete complete Repos.
         print('Fehler: Löschen ist nur in Repo möglich.')
         return
     if not args:
@@ -233,10 +235,11 @@ def on_delete(args):
     if len(chosen_teacher) != 1:
         print('Fehler: Kein oder zu viele Übereinstimmungen gefunden.')
         return
-    teacher_name = '{} {}'.format(chosen_teacher[0].first_name, chosen_teacher[0].last_name)
-    really = prompt('Soll der Lehrer "{}" wirklich gelöscht werden? [y/N] '.format(teacher_name))
+    really = prompt('Soll der Lehrer "{}" wirklich gelöscht werden? [y/N] '.format(chosen_teacher[0]))
     if really.lower() == 'y':
         l.remove(chosen_teacher[0])
+        if not purge:
+            l.append(replace(chosen_teacher[0], deleted=True))
         write_teacher_list(l, current_repo_list)
 
 ##################################  CLI  ######################################
@@ -304,13 +307,13 @@ def main_loop(test, verbose):
             # TODO: Add more information on available commands.
             print('Mögliche Befehle: ', ', '.join(commands))
         elif command == 'new':
-            create_new_repo(args)
+            create_repo(args)
         elif command == 'open':
             open_repo(args)
         elif command == 'close':
             close_repo()
         elif command == 'list':
-            on_list_command()
+            on_list()
         elif command == 'import':
             on_import(args)
         elif command == 'export':
@@ -320,7 +323,7 @@ def main_loop(test, verbose):
         elif command == 'delete':
             on_delete(args)
         elif command == 'add':
-            on_add_command()
+            on_add()
         elif command == 'update':
             on_update(args)
         else:

@@ -31,16 +31,17 @@ def read_bbsv_file(update_file):
             #courses = row['courses']
             #birthday = row['birthday']
             #initial_password = row['initial_password]
-            was_deleted = row['deleted']             # deleted = -1 / else = 0
-            is_new_user = row['new']                 # new = -1 / else = 0
+            was_deleted = row['deleted'] == '-1'     # deleted = -1 / else = 0
+            is_new_user = row['new'] == '-1'         # new = -1 / else = 0
             #is_teacher_or_student = row['teacher']  # teacher = -1 / student = 0
             #group_memberships = row['groups']
             new_teacher = Teacher(guid=guid, last_name=last_name, first_name=first_name,
                                   email=generate_mail_address(last_name),
-                                  username=generate_username(first_name, last_name))
-            if was_deleted == '-1':
+                                  username=generate_username(first_name, last_name),
+                                  added=is_new_user, deleted=was_deleted)
+            if was_deleted:
                 deleted_teachers.append(new_teacher)
-            if is_new_user == '-1':
+            if is_new_user:
                 new_teachers.append(new_teacher)
         else:
             print('{} Lehrer aus Datei eingelesen.'.format(i+1))
