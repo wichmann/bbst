@@ -198,6 +198,7 @@ def on_amend(args, session):
         return
     current_repo_list = current_path / TEACHER_LIST_FILENAME
     l = read_teacher_list(current_repo_list)
+    # find teacher whose GUID starts with given argument
     chosen_teacher = [t for t in l if t.guid.startswith(args[0])]
     if len(chosen_teacher) != 1:
         print('Fehler: Kein oder zu viele Übereinstimmungen gefunden.')
@@ -215,7 +216,22 @@ def on_amend(args, session):
     write_teacher_list(l, current_repo_list)
 
 def on_delete(args):
-    pass
+    if not current_repo:
+        print('Fehler: Löschen ist nur in Repo möglich.')
+        return
+    if not args:
+        print('Fehler: Keine GUID angegeben.')
+        return
+    current_repo_list = current_path / TEACHER_LIST_FILENAME
+    l = read_teacher_list(current_repo_list)
+    # find teacher whose GUID starts with given argument
+    chosen_teacher = [t for t in l if t.guid.startswith(args[0])]
+    if len(chosen_teacher) != 1:
+        print('Fehler: Kein oder zu viele Übereinstimmungen gefunden.')
+        return
+    # remove teacher from list
+    l.remove(chosen_teacher[0])
+    write_teacher_list(l, current_repo_list)
 
 ##################################  CLI  ######################################
 
