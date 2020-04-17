@@ -97,7 +97,7 @@ def generate_good_readable_password():
     logger.debug('New password generated: ' + ''.join(password))
     return ''.join(password)
 
-@dataclass(frozen=True)
+@dataclass() #frozen=True
 class Teacher:
     guid: str = field(default_factory=uuid.uuid4)
     last_name: str = ''

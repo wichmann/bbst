@@ -52,6 +52,11 @@ def read_teacher_list(file_name):
     with open(file_name, 'r', newline='') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
+            # parse strings from CSV file for boolean values
+            row['added'] = True if row['added'] == 'True' else False
+            row['deleted'] = True if row['deleted'] == 'True' else False
+            # unify guid representation
+            row['guid'] = row['guid'].replace('{','').replace('}','').lower()
             new_teacher = Teacher(**row)
             teachers_list.append(new_teacher)
     return teachers_list

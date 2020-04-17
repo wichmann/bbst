@@ -60,14 +60,21 @@ def import_repo_into_repo(import_repo, destination_repo):
     """
     Reads a given import file in CSV format and copies it into a given directory.
     """
-    # TODO: Expand function to import user from file if teachers list already exists
-    # TODO: Change function to import teachers and remove users marked as deleted and reset added flag!!!!!
+    # TODO: Check whether to delete users from teachers list if they are marked as deleted.
     destination_file = BASE_PATH / destination_repo / TEACHER_LIST_FILENAME
     source_file = BASE_PATH / import_repo / TEACHER_LIST_FILENAME
     if destination_file.exists():
         print('Fehler: Liste existiert bereits in angegebenen Repo.')
         return
-    shutil.copy(source_file, destination_file)
+    if not source_file.exists():
+        print('Fehler: Keine Liste in angegebenen Repo.')
+        return
+    l = read_teacher_list(source_file)
+    for t in l:
+        # reset added flag because we are in new repo now
+        if t.added:
+            t.added = False
+    write_teacher_list(l, destination_file)
 
 ################################  Handler #####################################
 
@@ -115,13 +122,19 @@ def close_repo():
     current_path = BASE_PATH
     current_repo = ''
 
-def on_list():
+def on_list(args):
     if current_repo:
         current_repo_list = current_path / TEACHER_LIST_FILENAME
         if not current_repo_list.exists():
             print('Fehler: Aktuelles Repo enthält noch keine Listendatei.')
             return
-        table = [astuple(x) for x in read_teacher_list(current_repo_list)]
+        if args and args[0] != 'all':
+            print('Fehler: Befehl <list> hat falschen Parameter.')
+            return
+        teacher_list = read_teacher_list(current_repo_list)
+        if not args:
+            teacher_list = [t for t in teacher_list if t.added or t.deleted]
+        table = [astuple(x) for x in teacher_list]
         headers = list(asdict(Teacher()).keys())
         print(tabulate(table, headers, tablefmt="grid"))
     else:
@@ -193,7 +206,11 @@ def on_export():
         return
     teacher_list = read_teacher_list(current_repo_list)
     output_file = current_path / USER_INFO_FILENAME
-    create_user_info_document(str(output_file), teacher_list)
+    only_new_teachers = [t for t in teacher_list if t.added]
+    if only_new_teachers:
+        create_user_info_document(str(output_file), only_new_teachers)
+    else:
+        print('Fehler: Keine neuen Lehrer in Repo.')
 
 def on_amend(args):
     if not current_repo:
@@ -217,7 +234,8 @@ def on_amend(args):
     # remove old teacher and add amended teacher
     l.remove(chosen_teacher[0])
     l.append(Teacher(last_name=last_name, first_name=first_name, email=email, username=username,
-                     guid=chosen_teacher[0].guid, password=chosen_teacher[0].password))
+                     guid=chosen_teacher[0].guid, password=chosen_teacher[0].password,
+                     added=chosen_teacher[0].added, deleted=chosen_teacher[0].deleted))
     write_teacher_list(l, current_repo_list)
 
 def on_delete(args, purge=False):
@@ -308,12 +326,12 @@ def main_loop(test, verbose):
             print('Mögliche Befehle: ', ', '.join(commands))
         elif command == 'new':
             create_repo(args)
-        elif command == 'open':
+        elif command == 'open' or command == 'cd':
             open_repo(args)
         elif command == 'close':
             close_repo()
-        elif command == 'list':
-            on_list()
+        elif command == 'list' or command == 'ls':
+            on_list(args)
         elif command == 'import':
             on_import(args)
         elif command == 'export':
