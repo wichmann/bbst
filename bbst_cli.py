@@ -12,6 +12,7 @@ import logging
 import logging.handlers
 from pathlib import Path
 from datetime import datetime
+from contextlib import contextmanager
 from dataclasses import asdict, astuple, replace
 
 import click
@@ -36,6 +37,7 @@ logger = logging.getLogger('bbst')
 LOG_FILENAME = 'bbst.log'
 REPO_TOKEN = '.bbst'
 TEACHER_LIST_FILENAME = 'teacher_list.csv'
+BLACKLIST_FILENAME = 'blacklist.txt'
 HISTORY_FILE = '.bbst-history-file'
 USER_INFO_FILENAME = 'Anschreiben.pdf'
 MOODLE_FILENAME = 'Moodle.csv'
@@ -51,14 +53,28 @@ current_repo = ''
 
 ################################  Helper ######################################
 
+@contextmanager
+def teacher_list(*args, **kwds):
+    if 'filename' in kwds:
+        teacher_list_file = kwds['filename']
+    else:
+        teacher_list_file = current_path / TEACHER_LIST_FILENAME
+    if not teacher_list_file.exists():
+        print('Fehler: Aktuelles Repo enthält noch keine Listendatei.')
+        yield []
+    else:
+        try:
+            l = read_teacher_list(teacher_list_file)
+            yield l
+        finally:
+            write_teacher_list(l, teacher_list_file)
+
 def list_all_repos():
     return [d for d in BASE_PATH.iterdir() if d.is_dir() and (d/REPO_TOKEN).exists()]
 
 def add_new_teacher(new_teacher):
-    current_repo_list = current_path / TEACHER_LIST_FILENAME
-    l = read_teacher_list(current_repo_list)
-    l.append(new_teacher)
-    write_teacher_list(l, current_repo_list)
+    with teacher_list() as l:
+        l.append(new_teacher)
 
 def import_repo_into_repo(import_repo, destination_repo):
     """
@@ -73,12 +89,32 @@ def import_repo_into_repo(import_repo, destination_repo):
     if not source_file.exists():
         print('Fehler: Keine Liste in angegebenen Repo.')
         return
+    # copy teachers list to new repo
     l = read_teacher_list(source_file)
     for t in l:
         # reset added flag because we are in new repo now
         if t.added:
             t.added = False
     write_teacher_list(l, destination_file)
+    # copy blacklist to new repo
+    destination_file = BASE_PATH / destination_repo / BLACKLIST_FILENAME
+    source_file = BASE_PATH / import_repo / BLACKLIST_FILENAME
+    try:
+        shutil.copy(source_file, destination_file)
+    except FileNotFoundError as e:
+        logger.debug('No blacklist file was found: {}'.format(e))
+
+def add_teacher_to_blacklist(t):
+    with open(current_path / BLACKLIST_FILENAME, 'a+', encoding='utf-8') as f:
+        f.write('{}\n'.format(t.guid))
+
+def is_teacher_in_blacklist(t):
+    try:
+        with open(current_path / BLACKLIST_FILENAME, 'r', encoding='utf-8') as f:
+            return t.guid in f.read().split()
+    except FileNotFoundError as e:
+        logger.debug('No blacklist file was found: {}'.format(e))
+        return False
 
 ################################  Handler #####################################
 
@@ -102,7 +138,7 @@ def create_repo(args):
     if len(args) == 3 and args[1] == 'from':
         import_file = args[2]
         if not Path(import_file).exists():
-            print('Fehler: Angegebene Importdatei konnte nicht gefunden werden.')
+            print('Fehler: Angegebene Importdatei wurde nicht gefunden.')
             return
         import_repo_into_repo(import_file, current_path)
 
@@ -128,22 +164,18 @@ def close_repo():
 
 def on_list(args):
     if current_repo:
-        current_repo_list = current_path / TEACHER_LIST_FILENAME
-        if not current_repo_list.exists():
-            print('Fehler: Aktuelles Repo enthält noch keine Listendatei.')
-            return
         if args and args[0] != 'all' and args[0] != 'search':
             print('Fehler: Befehl <list> hat falschen Parameter.')
             return
-        teacher_list = read_teacher_list(current_repo_list)
-        if not args:
-            teacher_list = [t for t in teacher_list if t.added or t.deleted]
-        if args and args[0] == 'search':
-            query = args[1]
-            teacher_list = [t for t in teacher_list if t.first_name.find(query) != -1 or t.last_name.find(query) != -1]
-        table = [astuple(x) for x in teacher_list]
-        headers = list(asdict(Teacher()).keys())
-        print(tabulate(table, headers, tablefmt="grid"))
+        with teacher_list() as l:
+            if not args:
+                l = [t for t in l if t.added or t.deleted]
+            if args and args[0] == 'search':
+                query = args[1]
+                l = [t for t in l if t.first_name.find(query) != -1 or t.last_name.find(query) != -1]
+            table = [astuple(x) for x in l]
+            headers = list(asdict(Teacher()).keys())
+            print(tabulate(table, headers, tablefmt="grid"))
     else:
         print('Verfügbare Repos im Basisverzeichnis:')
         repo_list = list_all_repos()
@@ -179,10 +211,35 @@ def on_update(args):
     if not update_file.exists():
         print('Fehler: Zu übernehmende Datendatei existiert nicht.')
         return
-    new_teachers, deleted_teachers = read_bbsv_file(update_file)
-    for t in new_teachers:
-        add_new_teacher(t)
-    print('{} neue Lehrer hinzugefügt.'.format(len(new_teachers)))
+    new_teachers, deleted_teachers, all_teachers = read_bbsv_file(update_file)
+    #
+    number_of_added_teachers = 0
+    with teacher_list() as l:
+        for t in all_teachers:
+            # add marked teacher if not already in list
+            if t.added:
+                if not t in l:
+                    l.append(t)
+                    number_of_added_teachers += 1
+                continue
+            # check if the guid is already in teachers list
+            found = None
+            for tl in l:
+                if tl.guid == t.guid:
+                    found = t
+                    break
+            if not found and not is_teacher_in_blacklist(t):
+                print('Neuer Lehrer in Importdatei gefunden: {}'.format(t))
+                should_import = prompt('Soll der Lehrer in das Repo aufgenommen werden? [y/N] ')
+                if should_import.lower() == 'y':
+                    t.added = True
+                    l.append(t)
+                    number_of_added_teachers += 1
+                else:
+                    should_blacklist = prompt('Soll der Lehrer in die Blacklist aufgenommen werden? [y/N] ')
+                    if should_blacklist.lower() == 'y':
+                        add_teacher_to_blacklist(t)
+    print('{} neue Lehrer hinzugefügt.'.format(number_of_added_teachers))
     for t in deleted_teachers:
         on_delete([t.guid])
         print('Lehrer {} wurde als gelöscht markiert.'.format(t))
@@ -207,30 +264,26 @@ def on_export():
         print('Fehler: Export ist nur in Repo möglich.')
         return
     print('Exportieren aktuelles Repo in alle Exportformate...')
-    current_repo_list = current_path / TEACHER_LIST_FILENAME
-    if not current_repo_list.exists():
-        print('Fehler: Aktuelles Repo enthält noch keine Listendatei.')
-        return
-    teacher_list = read_teacher_list(current_repo_list)
-    #
-    output_file = current_path / MOODLE_FILENAME
-    write_moodle_file(teacher_list, output_file=output_file)
-    #
-    output_file = current_path / LOGODIDACT_FILENAME
-    write_logodidact_file(teacher_list, output_file=output_file)
-    #
-    output_file = current_path / RADIUS_FILENAME
-    write_radius_file(teacher_list, output_file=output_file)
-    #
-    output_file = current_path / WEBUNTIS_FILENAME
-    write_webuntis_file(teacher_list, output_file=output_file)
-    #
-    output_file = current_path / USER_INFO_FILENAME
-    only_new_teachers = [t for t in teacher_list if t.added]
-    if only_new_teachers:
-        create_user_info_document(str(output_file), only_new_teachers)
-    else:
-        print('Fehler: Keine neuen Lehrer in Repo.')
+    
+    with teacher_list() as l:
+        output_file = current_path / MOODLE_FILENAME
+        write_moodle_file(l, output_file=output_file)
+        #
+        output_file = current_path / LOGODIDACT_FILENAME
+        write_logodidact_file(l, output_file=output_file)
+        #
+        output_file = current_path / RADIUS_FILENAME
+        write_radius_file(l, output_file=output_file)
+        #
+        output_file = current_path / WEBUNTIS_FILENAME
+        write_webuntis_file(l, output_file=output_file)
+        #
+        output_file = current_path / USER_INFO_FILENAME
+        only_new_teachers = [t for t in l if t.added]
+        if only_new_teachers:
+            create_user_info_document(str(output_file), only_new_teachers)
+        else:
+            print('Fehler: Keine neuen Lehrer in Repo.')
 
 def on_amend(args):
     if not current_repo:

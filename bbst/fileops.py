@@ -17,6 +17,7 @@ def read_bbsv_file(update_file):
     """
     deleted_teachers = []
     new_teachers = []
+    all_teachers = []
     fieldnames = ['guid', 'email', 'short_name', 'last_name', 'first_name', 'classes',
                   'courses', 'birthday', 'initial_password', 'deleted', 'new',
                   'teacher','groups']
@@ -44,9 +45,10 @@ def read_bbsv_file(update_file):
                 deleted_teachers.append(new_teacher)
             if is_new_user:
                 new_teachers.append(new_teacher)
+            all_teachers.append(new_teacher)
         else:
             print('{} Lehrer aus Datei eingelesen.'.format(i+1))
-    return new_teachers, deleted_teachers
+    return new_teachers, deleted_teachers, all_teachers
 
 def read_teacher_list(file_name):
     teachers_list = []
