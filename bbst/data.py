@@ -100,15 +100,15 @@ def generate_good_readable_password():
 @dataclass() #frozen=True
 class Teacher:
     guid: str = field(default_factory=uuid.uuid4)
-    last_name: str = ''
-    first_name: str = ''
-    email: str = ''
-    username: str = ''
-    password: str = field(default_factory=generate_good_readable_password)
+    last_name: str = field(default='', compare=False)
+    first_name: str = field(default='', compare=False)
+    email: str = field(default='', compare=False)
+    username: str = field(default='', compare=False)
+    password: str = field(default_factory=generate_good_readable_password, compare=False)
     # signals that teacher was added after initial import into Repo, either by the add or update command
-    added: bool = False
+    added: bool = field(default=False, compare=False, repr=False)
     # signals that teacher was deleted after initial import into Repo by the delete command
-    deleted: bool = False
+    deleted: bool = field(default=False, compare=False, repr=False)
 
     def __str__(self):
         return '<{} {}>'.format(self.first_name, self.last_name)
