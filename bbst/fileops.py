@@ -50,7 +50,7 @@ def read_bbsv_file(update_file):
 
 def read_teacher_list(file_name):
     teachers_list = []
-    with open(file_name, 'r', newline='') as csvfile:
+    with open(file_name, 'r', newline='', encoding='utf-8') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
             # parse strings from CSV file for boolean values
@@ -64,7 +64,7 @@ def read_teacher_list(file_name):
 
 def write_teacher_list(teacher_list, file_name):
     fieldnames = list(asdict(Teacher()).keys())
-    with open(file_name, 'w', newline='') as csvfile:
+    with open(file_name, 'w', newline='', encoding='utf-8') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         for t in teacher_list:
@@ -85,7 +85,7 @@ def write_moodle_file(teacher_list, output_file='Moodle.csv'):
     if os.path.exists(output_file):
         logger.warn('Moodle-Datei existiert schon und wird überschrieben!')
     # export file with all changed teachers
-    with open(output_file, 'w', newline='', encoding='utf8') as csvfile:
+    with open(output_file, 'w', newline='', encoding='utf-8') as csvfile:
         count = 0
         output_file_writer = csv.writer(csvfile, delimiter=';')
         output_file_writer.writerow(('cohort1', 'lastname', 'firstname', 'username',
@@ -100,7 +100,7 @@ def write_moodle_file(teacher_list, output_file='Moodle.csv'):
 def write_radius_file(teacher_list, output_file='Radius.csv'):
     if os.path.exists(output_file):
         logger.warn('Output file already exists, will be overwritten...')
-    with open(output_file, 'w') as export_file:
+    with open(output_file, 'w', encoding='utf-8') as export_file:
         count = 0
         line = '{:20}\t\tCleartext-Password := "{}"\n'
         for teacher in teacher_list:
@@ -113,7 +113,7 @@ def write_radius_file(teacher_list, output_file='Radius.csv'):
 def write_webuntis_file(teacher_list, output_file='Webuntis.csv'):
     if os.path.exists(output_file):
         logger.warn('Output file already exists, will be overwritten...')
-    with open(output_file, 'w', newline='', encoding='utf8') as csvfile:
+    with open(output_file, 'w', newline='', encoding='utf-8') as csvfile:
         output_file_writer = csv.writer(csvfile, delimiter=';')
         output_file_writer.writerow(('Name', 'Vorname', 'Benutzernamen', 'Passwort', 'Personenrolle', 'Benutzergruppe'))
         for teacher in teacher_list:
@@ -127,7 +127,7 @@ def write_logodidact_file(teacher_list, output_file='Logodidact.csv'):
     DEFAULT_OU = 'ou=KOL,ou=KOL,ou=Kollegium,ou=Lehrer,ou=BBSBS,DC=SN,DC=BBSBS,DC=LOCAL'
     if os.path.exists(output_file):
         logger.warn('Output file already exists, will be overwritten...')
-    with open(output_file, 'w', newline='', encoding='utf8') as csvfile:
+    with open(output_file, 'w', newline='', encoding='utf-8') as csvfile:
         output_file_writer = csv.writer(csvfile, delimiter=';')
         output_file_writer.writerow(('Klasse', 'Name', 'Firstname', 'UserID', 'Password', 'OU', 'Email'))
         for t in teacher_list:
