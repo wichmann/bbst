@@ -1,4 +1,5 @@
 
+import os
 import csv
 import logging
 from dataclasses import asdict
@@ -68,3 +69,68 @@ def write_teacher_list(teacher_list, file_name):
         writer.writeheader()
         for t in teacher_list:
             writer.writerow(asdict(t))
+
+
+def write_moodle_file(teacher_list, output_file='Moodle.csv'):
+    """
+    Writes a file containing all added and deleted teachers to be imported into Moodle.
+    
+    :param teacher_list: list of teachers
+    :param output_file: file name to write student list to
+    
+    File format for importing users into Moodle:
+    cohort1;    lastname;   firstname;  username;       password;   email;                  sysrole1;       deleted
+    Kollegium;  Müller;     Kirsten;    kol.muelkirs;   12345678;   mueller@example.com;    coursecreator;  0 
+    """
+    if os.path.exists(output_file):
+        logger.warn('Moodle-Datei existiert schon und wird überschrieben!')
+    # export file with all changed teachers
+    with open(output_file, 'w', newline='', encoding='utf8') as csvfile:
+        count = 0
+        output_file_writer = csv.writer(csvfile, delimiter=';')
+        output_file_writer.writerow(('cohort1', 'lastname', 'firstname', 'username',
+                                     'password', 'email', 'sysrole1', 'deleted'))
+        for teacher in teacher_list:
+            if teacher.added or teacher.deleted:
+                output_file_writer.writerow(('Kollegium', teacher.last_name, teacher.first_name, teacher.username,
+                                             teacher.password, teacher.email, 'coursecreator', '1' if teacher.deleted else '0'))
+                count += 1
+        logger.debug('{0} teachers exported to Moodle file format.'.format(count))
+
+def write_radius_file(teacher_list, output_file='Radius.csv'):
+    if os.path.exists(output_file):
+        logger.warn('Output file already exists, will be overwritten...')
+    with open(output_file, 'w') as export_file:
+        count = 0
+        line = '{:20}\t\tCleartext-Password := "{}"\n'
+        for teacher in teacher_list:
+            if teacher.added:
+                count += 1
+                formatted_line = line.format(teacher.username.lower(), teacher.password)
+                export_file.write(formatted_line)
+        logger.debug('{0} teacher exported to radius file format.'.format(count))
+
+def write_webuntis_file(teacher_list, output_file='Webuntis.csv'):
+    if os.path.exists(output_file):
+        logger.warn('Output file already exists, will be overwritten...')
+    with open(output_file, 'w', newline='', encoding='utf8') as csvfile:
+        output_file_writer = csv.writer(csvfile, delimiter=';')
+        output_file_writer.writerow(('Name', 'Vorname', 'Benutzernamen', 'Passwort', 'Personenrolle', 'Benutzergruppe'))
+        for teacher in teacher_list:
+            if teacher.added:
+                output_file_writer.writerow((teacher.last_name, teacher.first_name, teacher.username, teacher.password, 'Personenrolle', 'Benutzergruppe'))
+            if teacher.deleted:
+                print('Bitte folgenden Lehrer manuell in Webuntis löschen: {}'.format(teacher))
+
+
+def write_logodidact_file(teacher_list, output_file='Logodidact.csv'):
+    DEFAULT_OU = 'ou=KOL,ou=KOL,ou=Kollegium,ou=Lehrer,ou=BBSBS,DC=SN,DC=BBSBS,DC=LOCAL'
+    if os.path.exists(output_file):
+        logger.warn('Output file already exists, will be overwritten...')
+    with open(output_file, 'w', newline='', encoding='utf8') as csvfile:
+        output_file_writer = csv.writer(csvfile, delimiter=';')
+        output_file_writer.writerow(('Klasse', 'Name', 'Firstname', 'UserID', 'Password', 'OU', 'Email'))
+        for t in teacher_list:
+            if not t.deleted:
+                output_file_writer.writerow(('KOL', t.last_name, t.first_name, t.username,
+                                             t.password, DEFAULT_OU, t.email))

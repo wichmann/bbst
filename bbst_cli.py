@@ -26,7 +26,7 @@ from prompt_toolkit.shortcuts import message_dialog, yes_no_dialog, input_dialog
 from prompt_toolkit.history import FileHistory
 
 from bbst.data import Teacher, generate_mail_address, generate_username
-from bbst.fileops import read_bbsv_file, read_teacher_list, write_teacher_list
+from bbst.fileops import read_bbsv_file, read_teacher_list, write_teacher_list, write_moodle_file, write_radius_file, write_webuntis_file, write_logodidact_file
 from bbst.pdf import create_user_info_document
 
 
@@ -38,6 +38,10 @@ REPO_TOKEN = '.bbst'
 TEACHER_LIST_FILENAME = 'teacher_list.csv'
 HISTORY_FILE = '.bbst-history-file'
 USER_INFO_FILENAME = 'Anschreiben.pdf'
+MOODLE_FILENAME = 'Moodle.csv'
+WEBUNTIS_FILENAME = 'Webuntis.csv'
+RADIUS_FILENAME = 'Radius.csv'
+LOGODIDACT_FILENAME = 'Logodidact.csv'
 BASE_PATH = Path().cwd()
 
 # TODO: Eliminate global variables!
@@ -128,12 +132,15 @@ def on_list(args):
         if not current_repo_list.exists():
             print('Fehler: Aktuelles Repo enthält noch keine Listendatei.')
             return
-        if args and args[0] != 'all':
+        if args and args[0] != 'all' and args[0] != 'search':
             print('Fehler: Befehl <list> hat falschen Parameter.')
             return
         teacher_list = read_teacher_list(current_repo_list)
         if not args:
             teacher_list = [t for t in teacher_list if t.added or t.deleted]
+        if args and args[0] == 'search':
+            query = args[1]
+            teacher_list = [t for t in teacher_list if t.first_name.find(query) != -1 or t.last_name.find(query) != -1]
         table = [astuple(x) for x in teacher_list]
         headers = list(asdict(Teacher()).keys())
         print(tabulate(table, headers, tablefmt="grid"))
@@ -205,6 +212,19 @@ def on_export():
         print('Fehler: Aktuelles Repo enthält noch keine Listendatei.')
         return
     teacher_list = read_teacher_list(current_repo_list)
+    #
+    output_file = current_path / MOODLE_FILENAME
+    write_moodle_file(teacher_list, output_file=output_file)
+    #
+    output_file = current_path / LOGODIDACT_FILENAME
+    write_logodidact_file(teacher_list, output_file=output_file)
+    #
+    output_file = current_path / RADIUS_FILENAME
+    write_radius_file(teacher_list, output_file=output_file)
+    #
+    output_file = current_path / WEBUNTIS_FILENAME
+    write_webuntis_file(teacher_list, output_file=output_file)
+    #
     output_file = current_path / USER_INFO_FILENAME
     only_new_teachers = [t for t in teacher_list if t.added]
     if only_new_teachers:
