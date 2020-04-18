@@ -53,7 +53,7 @@ def create_user_info_document(output_file, teacher_list):
     doc = SimpleDocTemplate(output_file, author=author, title=title)
     story = []
     for t in teacher_list:
-        user_data = '{}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{}'.format(t.username, t.password)
+        user_data = '{}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{}'.format(t.username.lower(), t.password)
         story.append(logo)
         story.append(Spacer(1,1.75*cm))
         story.append(Paragraph('<b>{}</b>'.format(title), subject_paragraph_style))

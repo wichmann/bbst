@@ -94,7 +94,7 @@ def write_moodle_file(teacher_list, output_file='Moodle.csv'):
                                      'password', 'email', 'sysrole1', 'deleted'))
         for teacher in teacher_list:
             if teacher.added or teacher.deleted:
-                output_file_writer.writerow(('Kollegium', teacher.last_name, teacher.first_name, teacher.username,
+                output_file_writer.writerow(('Kollegium', teacher.last_name, teacher.first_name, teacher.username.lower(),
                                              teacher.password, teacher.email, 'coursecreator', '1' if teacher.deleted else '0'))
                 count += 1
         logger.debug('{0} teachers exported to Moodle file format.'.format(count))
@@ -120,7 +120,7 @@ def write_webuntis_file(teacher_list, output_file='Webuntis.csv'):
         output_file_writer.writerow(('Name', 'Vorname', 'Benutzernamen', 'Passwort', 'Personenrolle', 'Benutzergruppe'))
         for teacher in teacher_list:
             if teacher.added:
-                output_file_writer.writerow((teacher.last_name, teacher.first_name, teacher.username, teacher.password, 'Personenrolle', 'Benutzergruppe'))
+                output_file_writer.writerow((teacher.last_name, teacher.first_name, teacher.username.lower(), teacher.password, 'Personenrolle', 'Benutzergruppe'))
             if teacher.deleted:
                 print('Bitte folgenden Lehrer manuell in Webuntis löschen: {}'.format(teacher))
 
