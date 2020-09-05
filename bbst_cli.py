@@ -12,6 +12,7 @@ import logging
 import logging.handlers
 from pathlib import Path
 from datetime import datetime
+from collections import Counter
 from contextlib import contextmanager
 from dataclasses import asdict, astuple, replace
 
@@ -343,6 +344,19 @@ def on_delete(args, purge=False):
             l.append(replace(chosen_teacher[0], deleted=True))
         write_teacher_list(l, current_repo_list)
 
+def on_stats():
+    if not current_repo:
+        print('Fehler: Statistik ist nur in Repo möglich.')
+        return
+    current_repo_list = current_path / TEACHER_LIST_FILENAME
+    teachers = read_teacher_list(current_repo_list)
+    names = [t.first_name.strip() for t in teachers]
+    occurrences = {k: v for k, v in Counter(names).items() if v > 1}
+    occurrences = sorted(occurrences.items(), key=lambda kv: kv[1], reverse=True)
+    maximum = max([int(x[1]) for x in occurrences])
+    for o in occurrences:
+        print(' [{0: >15}] {1} ({2})'.format(o[0], '#' * int(60 / maximum * int(o[1])), o[1]))
+
 ##################################  CLI  ######################################
 
 def prepare_completers(commands):
@@ -427,6 +441,8 @@ def main_loop(test, verbose):
             on_add()
         elif command == 'update':
             on_update(args)
+        elif command == 'stats':
+            on_stats()
         else:
             print('Fehler: Befehl ungültig. Verwenden Sie den Befehl "help" für weitere Informationen.')
 
