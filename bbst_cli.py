@@ -296,6 +296,23 @@ def on_export():
         else:
             print('Fehler: Keine neuen Lehrer in Repo.')
 
+def on_print(args):
+    if not current_repo:
+        print('Fehler: Export ist nur in Repo möglich.')
+        return
+    if not args:
+        print('Fehler: Keine GUID angegeben.')
+        return
+    print('Exportieren Anschreiben für ausgewählten Lehrer...')
+    with teacher_list() as l:
+        # find teacher whose GUID starts with given argument
+        chosen_teacher = [t for t in l if t.guid.startswith(args[0])]
+        if len(chosen_teacher) != 1:
+            print('Fehler: Kein oder zu viele Übereinstimmungen gefunden.')
+            return
+        output_file = current_path / '{} {}.pdf'.format(chosen_teacher[0].first_name, chosen_teacher[0].last_name)
+        create_user_info_document(str(output_file), chosen_teacher)
+
 def on_amend(args):
     if not current_repo:
         print('Fehler: Änderungen sind nur in Repo möglich.')
@@ -400,7 +417,9 @@ def main_loop(test, verbose):
     "Simple tool for managing user accounts for teachers at a vocational school."
 
     # TODO: Add command 'amend' to change and 'delete' to remove entry.
-    commands = ['new', 'import', 'export', 'open', 'close', 'list', 'add', 'update', 'help', 'exit', 'quit', 'amend', 'delete']
+    commands = ['new', 'import', 'export', 'open', 'close', 'list', 'add',
+                'update', 'help', 'exit', 'quit', 'amend', 'delete', 'print',
+                'stats']
     session = prepare_cli_interface(commands)
 
     while True:
@@ -443,6 +462,8 @@ def main_loop(test, verbose):
             on_update(args)
         elif command == 'stats':
             on_stats()
+        elif command == 'print':
+            on_print(args)
         else:
             print('Fehler: Befehl ungültig. Verwenden Sie den Befehl "help" für weitere Informationen.')
 
