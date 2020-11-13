@@ -456,6 +456,8 @@ def main_loop(test, verbose):
             on_amend(args)
         elif command == 'delete':
             on_delete(args)
+        elif command == 'purge':
+            on_delete(args, True)
         elif command == 'add':
             on_add()
         elif command == 'update':
