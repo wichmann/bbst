@@ -136,3 +136,18 @@ def write_logodidact_file(teacher_list, output_file='Logodidact.csv'):
             if not t.deleted:
                 output_file_writer.writerow(('KOL', t.last_name, t.first_name, t.username,
                                              t.password, DEFAULT_OU, t.email))
+
+
+def write_nbc_file(teacher_list, output_file='NBC.csv'):
+    """
+    Writes a CSV file containing all added teachers for import into the
+    NBC (Niedersächsische Bildungscloud).
+    """
+    if os.path.exists(output_file):
+        logger.warn('Output file already exists, will be overwritten...')
+    with open(output_file, 'w', newline='', encoding='utf-8') as csvfile:
+        output_file_writer = csv.writer(csvfile, delimiter=',')
+        output_file_writer.writerow(('firstName', 'lastName', 'email', 'birthday', 'class'))
+        for t in teacher_list:
+            if t.added:
+                output_file_writer.writerow((t.first_name, t.last_name, t.email, '', ''))

@@ -28,7 +28,7 @@ from prompt_toolkit.shortcuts import message_dialog, yes_no_dialog, input_dialog
 from prompt_toolkit.history import FileHistory
 
 from bbst.data import Teacher, generate_mail_address, generate_username
-from bbst.fileops import read_bbsv_file, read_teacher_list, write_teacher_list, write_moodle_file, write_radius_file, write_webuntis_file, write_logodidact_file
+from bbst.fileops import read_bbsv_file, read_teacher_list, write_teacher_list, write_moodle_file, write_radius_file, write_webuntis_file, write_logodidact_file, write_nbc_file
 from bbst.pdf import create_user_info_document
 
 
@@ -45,6 +45,7 @@ MOODLE_FILENAME = 'Moodle.csv'
 WEBUNTIS_FILENAME = 'Webuntis.csv'
 RADIUS_FILENAME = 'Radius.csv'
 LOGODIDACT_FILENAME = 'Logodidact.csv'
+NBC_FILENAME = 'NBC.csv'
 BASE_PATH = Path().cwd()
 
 # TODO: Eliminate global variables!
@@ -282,6 +283,9 @@ def on_export():
         #
         output_file = current_path / LOGODIDACT_FILENAME
         write_logodidact_file(l, output_file=output_file)
+        #
+        output_file = current_path / NBC_FILENAME
+        write_nbc_file(l, output_file=output_file)
         #
         output_file = current_path / RADIUS_FILENAME
         write_radius_file(l, output_file=output_file)
