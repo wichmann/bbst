@@ -49,3 +49,5 @@ Pipfile.lock
 */.bbst
 *.pdf
 .bbst-history-file
+*/*.png
+*/*.odt
