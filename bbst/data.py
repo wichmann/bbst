@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 logger = logging.getLogger('bbst.data')
 
 
-PASSWORD_LENGTH = 8
+PASSWORD_LENGTH = 10
 
 
 ### map translating all illegal characters into legal (ascii) characters
@@ -85,13 +85,15 @@ def generate_good_readable_password():
     uppercase = 'ABCDEFGHJKLMNPRSTUVWXYZ'
     lowercase = 'abcdefghijkmnopqrstuvwxyz'
     digits = '23456789'
+    specialchars = '!?%&-+*'
     chars = uppercase + lowercase + digits
-    # fill up with at least one uppercase, one lowercase and one digit
+    # fill up with at least one uppercase, one lowercase, one digit and one special character
     password += random.SystemRandom().choice(uppercase)
     password += random.SystemRandom().choice(lowercase)
     password += random.SystemRandom().choice(digits)
+    password += random.SystemRandom().choice(specialchars)
     # fill password up with more characters
-    password += [random.SystemRandom().choice(chars) for _ in range(PASSWORD_LENGTH-3)]
+    password += [random.SystemRandom().choice(chars) for _ in range(PASSWORD_LENGTH-4)]
     # shuffle characters of password string
     random.shuffle(password)
     logger.debug('New password generated: ' + ''.join(password))
