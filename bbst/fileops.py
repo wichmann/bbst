@@ -117,10 +117,10 @@ def write_webuntis_file(teacher_list, output_file='Webuntis.csv'):
         logger.warn('Output file already exists, will be overwritten...')
     with open(output_file, 'w', newline='', encoding='utf-8') as csvfile:
         output_file_writer = csv.writer(csvfile, delimiter=';')
-        output_file_writer.writerow(('Name', 'Vorname', 'Benutzernamen', 'Passwort', 'Personenrolle', 'Benutzergruppe'))
+        output_file_writer.writerow(('Name', 'Vorname', 'Benutzernamen', 'Passwort', 'Personenrolle', 'Benutzergruppe', 'Email'))
         for teacher in teacher_list:
             if teacher.added:
-                output_file_writer.writerow((teacher.last_name, teacher.first_name, teacher.username.lower(), teacher.password, 'Personenrolle', 'Benutzergruppe'))
+                output_file_writer.writerow((teacher.last_name, teacher.first_name, teacher.username.lower(), teacher.password, 'Personenrolle', 'Benutzergruppe', teacher.email))
             if teacher.deleted:
                 print('Bitte folgenden Lehrer manuell in Webuntis löschen: {}'.format(teacher))
 
