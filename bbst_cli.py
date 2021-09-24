@@ -184,7 +184,7 @@ def on_list(args):
                 l = [t for t in l if t.added or t.deleted]
             if args and args[0] == 'search':
                 query = args[1]
-                l = [t for t in l if t.first_name.find(query) != -1 or t.last_name.find(query) != -1]
+                l = [t for t in l if t.first_name.find(query) != -1 or t.last_name.find(query) != -1 or t.email.find(query) != -1]
             table = [astuple(x) for x in l]
             headers = list(asdict(Teacher()).keys())
             print(tabulate(table, headers, tablefmt="grid"))
