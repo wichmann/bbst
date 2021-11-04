@@ -53,7 +53,8 @@ char_map = {'ä': 'ae',
             'ć': 'c',
             '´': '',
             '-': '',
-            ' ': ''}
+            ' ': '',
+            'š': 's'}
 
 
 def replace_illegal_characters(string):
