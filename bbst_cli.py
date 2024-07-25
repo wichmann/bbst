@@ -176,15 +176,12 @@ def close_repo():
 
 def on_list(args):
     if current_repo:
-        if args and args[0] != 'all' and args[0] != 'search':
+        if args and args[0] != 'all':
             print('Fehler: Befehl <list> hat falschen Parameter.')
             return
         with teacher_list() as l:
             if not args:
                 l = [t for t in l if t.added or t.deleted]
-            if args and args[0] == 'search':
-                query = args[1]
-                l = [t for t in l if t.first_name.find(query) != -1 or t.last_name.find(query) != -1 or t.email.find(query) != -1]
             table = [astuple(x) for x in l]
             headers = list(asdict(Teacher()).keys())
             print(tabulate(table, headers, tablefmt="grid"))
@@ -196,6 +193,20 @@ def on_list(args):
                 print(f'   {r}')
         else:
             print('Keine Repos gefunden!')
+
+def on_search(args):
+    if not current_repo:
+        print('Fehler: Suchen nur in Repo möglich.')
+        return
+    if not args:
+        print('Fehler: Keine Suchbegriff angegeben.')
+        return
+    with teacher_list() as l:
+        query = args[0]
+        l = [t for t in l if t.first_name.find(query) != -1 or t.last_name.find(query) != -1 or t.email.find(query) != -1]
+        table = [astuple(x) for x in l]
+        headers = list(asdict(Teacher()).keys())
+        print(tabulate(table, headers, tablefmt="grid"))
 
 def on_add():
     if not current_repo:
@@ -423,7 +434,7 @@ def main_loop(test, verbose):
     # TODO: Add command 'amend' to change and 'delete' to remove entry.
     commands = ['new', 'import', 'export', 'open', 'close', 'list', 'add',
                 'update', 'help', 'exit', 'quit', 'amend', 'delete', 'print',
-                'stats']
+                'stats', 'search']
     session = prepare_cli_interface(commands)
 
     while True:
@@ -452,6 +463,8 @@ def main_loop(test, verbose):
             close_repo()
         elif command == 'list' or command == 'ls':
             on_list(args)
+        elif command == 'search':
+            on_search(args)
         elif command == 'import':
             on_import(args)
         elif command == 'export':
