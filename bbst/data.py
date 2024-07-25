@@ -67,7 +67,7 @@ def generate_username(first_name, last_name):
                              replace_illegal_characters(first_name)[0:4].upper())
 
 def generate_mail_address(last_name):
-    return '{}@bbs-brinkstrasse.de'.format(last_name.lower())
+    return '{}@bbs-brinkstrasse.de'.format(replace_illegal_characters(last_name).lower())
 
 def generate_good_readable_password():
     """
