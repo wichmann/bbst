@@ -26,7 +26,7 @@ from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.history import FileHistory
 
 from bbst.data import Teacher, generate_mail_address, generate_short_username
-from bbst.fileops import read_bbsv_file, read_teacher_list, write_teacher_list, write_moodle_file, write_radius_file, write_webuntis_file, write_logodidact_file, write_nbc_file
+from bbst.fileops import read_bbsv_file, read_teacher_list, write_teacher_list, write_moodle_file, write_radius_file, write_webuntis_file, write_logodidact_file, write_nbc_file, write_iserv_file
 from bbst.pdf import create_user_info_document
 
 
@@ -43,6 +43,7 @@ MOODLE_FILENAME = 'Moodle.csv'
 WEBUNTIS_FILENAME = 'Webuntis.csv'
 RADIUS_FILENAME = 'Radius.csv'
 LOGODIDACT_FILENAME = 'Logodidact.csv'
+ISERV_FILENNAME = 'IServ.csv'
 NBC_FILENAME = 'NBC.csv'
 BASE_PATH = Path().cwd()
 
@@ -285,13 +286,16 @@ def on_export():
         print('Fehler: Export ist nur in Repo möglich.')
         return
     print('Exportieren aktuelles Repo in alle Exportformate...')
-    
+
     with teacher_list() as l:
         output_file = current_path / MOODLE_FILENAME
         write_moodle_file(l, output_file=output_file)
         #
         output_file = current_path / LOGODIDACT_FILENAME
         write_logodidact_file(l, output_file=output_file)
+        #
+        output_file = current_path / ISERV_FILENNAME
+        write_iserv_file(l, output_file=output_file)
         #
         output_file = current_path / NBC_FILENAME
         write_nbc_file(l, output_file=output_file)

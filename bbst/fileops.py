@@ -4,7 +4,7 @@ import csv
 import logging
 from dataclasses import asdict
 
-from bbst.data import Teacher, generate_mail_address, generate_username, generate_good_readable_password
+from bbst.data import Teacher, generate_mail_address, generate_short_username, generate_long_username
 
 
 logger = logging.getLogger('bbst.fileops')
@@ -39,7 +39,7 @@ def read_bbsv_file(update_file):
             #group_memberships = row['groups']
             new_teacher = Teacher(guid=guid, last_name=last_name, first_name=first_name,
                                   email=generate_mail_address(last_name),
-                                  username=generate_username(first_name, last_name),
+                                  username=generate_short_username(first_name, last_name),
                                   added=is_new_user, deleted=was_deleted)
             if was_deleted:
                 deleted_teachers.append(new_teacher)
@@ -151,3 +151,40 @@ def write_nbc_file(teacher_list, output_file='NBC.csv'):
         for t in teacher_list:
             if t.added:
                 output_file_writer.writerow((t.first_name, t.last_name, t.email, '', ''))
+
+
+def write_iserv_file(teacher_list, output_file):
+    """
+    Writes a CSV file containing all teachers for import into the iServ school server.
+
+    :param output_file: file name to write student list to
+    :param change_set: object representing all changes between given imports
+
+    File format for importing users into iServ:
+    Import-ID;Vorname;Nachname;Klasse/Information;Account;Passwort;Email;Geburtsdatum;Gruppen
+    0075098C-A904-4F48-B6E8-49802C9820ED;Christian;Wichmann;WICHCHRI;christian.wichmann;12345678;wichmann@bbs-os-brinkstr.de;09.09.1980;"Kollegium"
+    """
+    # write normal import file with all information
+    if os.path.exists(output_file):
+        logger.warning('Output file already exists, will be overwritten...')
+    with open(output_file, 'w', newline='', encoding='utf-8') as csvfile:
+        output_file_writer = csv.writer(csvfile, delimiter=',')
+        output_file_writer.writerow(('Import-ID', 'Vorname', 'Nachname', 'Klasse/Information', 'Account', 'Passwort', 'Email', 'Geburtsdatum', 'Gruppen'))
+        for t in teacher_list:
+            if not t.deleted:
+                short_username = t.username.split('.')[1]  # remove prefix "KOL."
+                long_username = generate_long_username(t.first_name, t.last_name)
+                output_file_writer.writerow((t.guid, t.first_name, t.last_name, short_username, long_username, t.password, t.email, '', 'Kollegium'))
+    # write additional file containing only the GUID, the old username and the new username
+    output_file = os.path.splitext(output_file)
+    output_file_comparison = '{}.comparison{}'.format(*output_file)
+    if os.path.exists(output_file_comparison):
+        logger.warning('Output file already exists, will be overwritten...')
+    with open(output_file_comparison, 'w', newline='', encoding='utf-8') as csvfile:
+        output_file_writer = csv.writer(csvfile, delimiter=',')
+        output_file_writer.writerow(('Import-ID', 'OldAccount', 'Account'))
+        for t in teacher_list:
+            if not t.deleted:
+                short_username = t.username.lower()
+                long_username = generate_long_username(t.first_name, t.last_name)
+                output_file_writer.writerow((t.guid, short_username, long_username))
