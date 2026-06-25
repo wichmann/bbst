@@ -20,11 +20,9 @@ import click
 from tabulate import tabulate
 from prompt_toolkit import PromptSession, prompt
 from prompt_toolkit.styles import Style
-from prompt_toolkit.completion import Completer, Completion, WordCompleter, PathCompleter, merge_completers
+from prompt_toolkit.completion import WordCompleter, PathCompleter, merge_completers
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
-from prompt_toolkit.application import run_in_terminal
 from prompt_toolkit.key_binding import KeyBindings
-from prompt_toolkit.shortcuts import message_dialog, yes_no_dialog, input_dialog, ProgressBar
 from prompt_toolkit.history import FileHistory
 
 from bbst.data import Teacher, generate_mail_address, generate_username
@@ -447,21 +445,20 @@ def main_loop(test, verbose):
         user_input = session.prompt(prompt_message, completer=prepare_completers(commands))
         if not user_input:
             continue
-        else:
-            user_input = user_input.split()
+        user_input = user_input.split()
         command, args = user_input[0], user_input[1:]
-        if command == 'exit' or command == 'quit':
+        if command in ('exit', 'quit'):
             return
-        elif command == 'help':
+        if command == 'help':
             # TODO: Add more information on available commands.
             print('Mögliche Befehle: ', ', '.join(commands))
         elif command == 'new':
             create_repo(args)
-        elif command == 'open' or command == 'cd':
+        elif command in ('open', 'cd'):
             open_repo(args)
         elif command == 'close':
             close_repo()
-        elif command == 'list' or command == 'ls':
+        elif command in ('list', 'ls'):
             on_list(args)
         elif command == 'search':
             on_search(args)

@@ -2,7 +2,7 @@
 import logging
 from datetime import datetime
 
-from reportlab.lib.units import cm, mm
+from reportlab.lib.units import cm
 from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
@@ -18,7 +18,7 @@ BORDER_HORIZONTAL = 2.0*cm
 BORDER_VERTICAL = 1.5*cm
 
 
-def build_footer(canvas, doc):
+def build_footer(canvas, _):
     today = datetime.today().strftime('%d.%m.%Y')
     canvas.saveState()
     canvas.setFont('Helvetica', 10)
@@ -47,7 +47,7 @@ def create_user_info_document(output_file, teacher_list):
     Möglichkeit, sich ein neues Passwort per Mail zusenden zu lassen.""",
     """Weitere Informationen finden Sie im Moodle-Kurs unter
     <a color="blue" href="https://moodle.nibis.de/bbs_osb/course/view.php?id=7">https://moodle.nibis.de/bbs_osb/course/view.php?id=7</a>.
-    Bei allen weiteren Fragen können Sie sich gerne bei mir melden.""", 
+    Bei allen weiteren Fragen können Sie sich gerne bei mir melden.""",
     """<br/>Viele Grüße<br/>&nbsp;&nbsp;&nbsp;&nbsp;Christian Wichmann<br/>&nbsp;&nbsp;&nbsp;&nbsp;wichmann@bbs-os-brinkstr.de"""]
     # building document
     doc = SimpleDocTemplate(output_file, author=author, title=title)
@@ -59,6 +59,7 @@ def create_user_info_document(output_file, teacher_list):
         story.append(Paragraph('<b>{}</b>'.format(title), subject_paragraph_style))
         story.append(Paragraph(info_text_greeting, main_paragraph_style))
         story.append(Paragraph(user_data, data_paragraph_style))
-        for p in info_text_paragraphs: story.append(Paragraph(p, main_paragraph_style)) 
+        for p in info_text_paragraphs:
+            story.append(Paragraph(p, main_paragraph_style))
         story.append(PageBreak())
     doc.build(story, onFirstPage=build_footer, onLaterPages=build_footer)

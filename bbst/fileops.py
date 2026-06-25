@@ -46,8 +46,7 @@ def read_bbsv_file(update_file):
             if is_new_user:
                 new_teachers.append(new_teacher)
             all_teachers.append(new_teacher)
-        else:
-            print('{} Lehrer aus Datei eingelesen.'.format(i+1))
+        print('{} Lehrer aus Datei eingelesen.'.format(i+1))
     return new_teachers, deleted_teachers, all_teachers
 
 def read_teacher_list(file_name):
@@ -85,7 +84,7 @@ def write_moodle_file(teacher_list, output_file='Moodle.csv'):
     Kollegium;  Müller;     Kirsten;    kol.muelkirs;   12345678;   mueller@example.com;    coursecreator;  0 
     """
     if os.path.exists(output_file):
-        logger.warn('Moodle-Datei existiert schon und wird überschrieben!')
+        logger.warning('Moodle-Datei existiert schon und wird überschrieben!')
     # export file with all changed teachers
     with open(output_file, 'w', newline='', encoding='utf-8') as csvfile:
         count = 0
@@ -101,7 +100,7 @@ def write_moodle_file(teacher_list, output_file='Moodle.csv'):
 
 def write_radius_file(teacher_list, output_file='Radius.csv'):
     if os.path.exists(output_file):
-        logger.warn('Output file already exists, will be overwritten...')
+        logger.warning('Output file already exists, will be overwritten...')
     with open(output_file, 'w', encoding='utf-8') as export_file:
         count = 0
         line = '{:20}\t\tCleartext-Password := "{}"\n'
@@ -114,7 +113,7 @@ def write_radius_file(teacher_list, output_file='Radius.csv'):
 
 def write_webuntis_file(teacher_list, output_file='Webuntis.csv'):
     if os.path.exists(output_file):
-        logger.warn('Output file already exists, will be overwritten...')
+        logger.warning('Output file already exists, will be overwritten...')
     with open(output_file, 'w', newline='', encoding='utf-8') as csvfile:
         output_file_writer = csv.writer(csvfile, delimiter=';')
         # do not output header because otherwise Webuntis creates a user names "Benutzername" ;-)
@@ -127,16 +126,16 @@ def write_webuntis_file(teacher_list, output_file='Webuntis.csv'):
 
 
 def write_logodidact_file(teacher_list, output_file='Logodidact.csv'):
-    DEFAULT_OU = 'ou=KOL,ou=KOL,ou=Kollegium,ou=Lehrer,ou=BBSBS,DC=SN,DC=BBSBS,DC=LOCAL'
+    default_ou = 'ou=KOL,ou=KOL,ou=Kollegium,ou=Lehrer,ou=BBSBS,DC=SN,DC=BBSBS,DC=LOCAL'
     if os.path.exists(output_file):
-        logger.warn('Output file already exists, will be overwritten...')
+        logger.warning('Output file already exists, will be overwritten...')
     with open(output_file, 'w', newline='', encoding='utf-8') as csvfile:
         output_file_writer = csv.writer(csvfile, delimiter=';')
         output_file_writer.writerow(('Klasse', 'Name', 'Firstname', 'UserID', 'Password', 'OU', 'Email'))
         for t in teacher_list:
             if not t.deleted:
                 output_file_writer.writerow(('KOL', t.last_name, t.first_name, t.username,
-                                             t.password, DEFAULT_OU, t.email))
+                                             t.password, default_ou, t.email))
 
 
 def write_nbc_file(teacher_list, output_file='NBC.csv'):
@@ -145,7 +144,7 @@ def write_nbc_file(teacher_list, output_file='NBC.csv'):
     NBC (Niedersächsische Bildungscloud).
     """
     if os.path.exists(output_file):
-        logger.warn('Output file already exists, will be overwritten...')
+        logger.warning('Output file already exists, will be overwritten...')
     with open(output_file, 'w', newline='', encoding='utf-8') as csvfile:
         output_file_writer = csv.writer(csvfile, delimiter=',')
         output_file_writer.writerow(('firstName', 'lastName', 'email', 'birthday', 'class'))
