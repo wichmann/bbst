@@ -52,8 +52,8 @@ char_map = {'ä': 'ae',
             'č': 'c',
             'ć': 'c',
             '´': '',
-            '-': '',
-            ' ': '',
+            '-': '-',
+            ' ': '.',
             'š': 's'}
 
 
@@ -62,9 +62,17 @@ def replace_illegal_characters(string):
     characters = list(string)
     return ''.join([char_map[char] if char in char_map else char for char in characters])
 
-def generate_username(first_name, last_name):
+def generate_short_username(first_name, last_name):
     return 'KOL.{}{}'.format(replace_illegal_characters(last_name)[0:4].upper(),
                              replace_illegal_characters(first_name)[0:4].upper())
+
+def generate_long_username(first_name, last_name):
+    """
+    Generates a long username based on the first and last name to be used for
+    import into iServ school server.
+    """
+    return '{}.{}'.format(replace_illegal_characters(first_name).lower(),
+                          replace_illegal_characters(last_name).lower())
 
 def generate_mail_address(last_name):
     return '{}@bbs-brinkstrasse.de'.format(replace_illegal_characters(last_name).lower())
@@ -106,6 +114,7 @@ class Teacher:
     last_name: str = field(default='', compare=False)
     first_name: str = field(default='', compare=False)
     email: str = field(default='', compare=False)
+    # username based on the old scheme ('kol.' + first 4 letters of last name + first 4 letters of first name)
     username: str = field(default='', compare=False)
     password: str = field(default_factory=generate_good_readable_password, compare=False)
     # signals that teacher was added after initial import into Repo, either by the add or update command

@@ -25,7 +25,7 @@ from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.history import FileHistory
 
-from bbst.data import Teacher, generate_mail_address, generate_username
+from bbst.data import Teacher, generate_mail_address, generate_short_username
 from bbst.fileops import read_bbsv_file, read_teacher_list, write_teacher_list, write_moodle_file, write_radius_file, write_webuntis_file, write_logodidact_file, write_nbc_file
 from bbst.pdf import create_user_info_document
 
@@ -218,7 +218,7 @@ def on_add():
         last_name = prompt('Name: ').strip()
     new_teacher = Teacher(last_name=last_name, first_name=first_name,
                           email=generate_mail_address(last_name), added=True,
-                          username=generate_username(first_name, last_name))
+                          username=generate_short_username(first_name, last_name))
     add_new_teacher(new_teacher)
 
 def on_update(args):
