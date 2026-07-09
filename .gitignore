@@ -51,3 +51,5 @@ Pipfile.lock
 .bbst-history-file
 */*.png
 */*.odt
+20*/*
+backup/*

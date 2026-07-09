@@ -169,12 +169,12 @@ def write_iserv_file(teacher_list, output_file):
         logger.warning('Output file already exists, will be overwritten...')
     with open(output_file, 'w', newline='', encoding='utf-8') as csvfile:
         output_file_writer = csv.writer(csvfile, delimiter=',')
-        output_file_writer.writerow(('Import-ID', 'Vorname', 'Nachname', 'Klasse/Information', 'Account', 'Passwort', 'Email', 'Geburtsdatum', 'Gruppen'))
+        output_file_writer.writerow(('Import-ID', 'Vorname', 'Nachname', 'Klasse/Information', 'Passwort', 'Gruppen'))
         for t in teacher_list:
             if not t.deleted:
                 short_username = t.username.split('.')[1]  # remove prefix "KOL."
                 long_username = generate_long_username(t.first_name, t.last_name)
-                output_file_writer.writerow((t.guid, t.first_name, t.last_name, short_username, long_username, t.password, t.email, '', 'Kollegium'))
+                output_file_writer.writerow((t.guid, t.first_name, t.last_name, short_username, t.password, 'Kollegium'))
     # write additional file containing only the GUID, the old username and the new username
     output_file = os.path.splitext(output_file)
     output_file_comparison = '{}.comparison{}'.format(*output_file)
