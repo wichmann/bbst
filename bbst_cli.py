@@ -384,7 +384,7 @@ def on_stats():
         return
     current_repo_list = current_path / TEACHER_LIST_FILENAME
     teachers = read_teacher_list(current_repo_list)
-    names = [t.first_name.strip() for t in teachers]
+    names = [t.first_name.strip() for t in teachers if not t.deleted]
     occurrences = {k: v for k, v in Counter(names).items() if v > 1}
     occurrences = sorted(occurrences.items(), key=lambda kv: kv[1], reverse=True)
     maximum = max([int(x[1]) for x in occurrences])
