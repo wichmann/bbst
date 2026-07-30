@@ -71,8 +71,8 @@ def generate_long_username(first_name, last_name):
     Generates a long username based on the first and last name to be used for
     import into iServ school server.
     """
-    return '{}.{}'.format(replace_illegal_characters(first_name).lower(),
-                          replace_illegal_characters(last_name).lower())
+    return '{}.{}'.format(replace_illegal_characters(first_name.split(' ')[0]).lower(),
+                          replace_illegal_characters(last_name).replace(' ', '.').lower())
 
 def generate_mail_address(last_name):
     return '{}@bbs-brinkstrasse.de'.format(replace_illegal_characters(last_name).lower())
