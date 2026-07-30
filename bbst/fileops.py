@@ -161,20 +161,20 @@ def write_iserv_file(teacher_list, output_file):
     :param change_set: object representing all changes between given imports
 
     File format for importing users into iServ:
-    Import-ID;Vorname;Nachname;Klasse/Information;Account;Passwort;Email;Geburtsdatum;Gruppen
-    0075098C-A904-4F48-B6E8-49802C9820ED;Christian;Wichmann;WICHCHRI;christian.wichmann;12345678;wichmann@bbs-os-brinkstr.de;09.09.1980;"Kollegium"
+    Import-ID;Vorname;Nachname;Klasse/Information;Passwort
+    0075098C-A904-4F48-B6E8-49802C9820ED;Christian;Wichmann;WICHCHRI;12345678
     """
     # write normal import file with all information
     if os.path.exists(output_file):
         logger.warning('Output file already exists, will be overwritten...')
     with open(output_file, 'w', newline='', encoding='utf-8') as csvfile:
         output_file_writer = csv.writer(csvfile, delimiter=',')
-        output_file_writer.writerow(('Import-ID', 'Vorname', 'Nachname', 'Klasse/Information', 'Passwort', 'Gruppen'))
+        output_file_writer.writerow(('Import-ID', 'Vorname', 'Nachname', 'Klasse/Information', 'Passwort'))
         for t in teacher_list:
             if not t.deleted:
                 short_username = t.username.split('.')[1]  # remove prefix "KOL."
                 long_username = generate_long_username(t.first_name, t.last_name)
-                output_file_writer.writerow((t.guid, t.first_name, t.last_name, short_username, t.password, 'Kollegium'))
+                output_file_writer.writerow((t.guid, t.first_name, t.last_name, short_username, t.password))
     # write additional file containing only the GUID, the old username and the new username
     output_file = os.path.splitext(output_file)
     output_file_comparison = '{}.comparison{}'.format(*output_file)
