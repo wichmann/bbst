@@ -40,15 +40,13 @@ def create_user_info_document(output_file, teacher_list):
     author = 'bbst - BBS Teacher Management'
     logo = Image('logo.png', width=PAGE_WIDTH-2*BORDER_HORIZONTAL, height=5.2445*cm, hAlign='CENTER')
     info_text_greeting = 'Liebe Kollegin, lieber Kollege,<br/>ihre Benutzerdaten lauten wie folgt:'
-    info_text_paragraphs = ["""Diese Zugangsdaten erlauben die Rechnernutzung in allen Räumen mit dem Logodidact-System.
-    Außerdem kann es zum Zugriff auf den Stundenplan über WebUntis und die Lernplattform Moodle genutzt werden.""",
-    """In Logodidact, Moodle und WebUntis lässt sich das Passwort ändern. Allerdings gilt jede Änderung nur für
-    das jeweilige System! Sollten Sie ihr Passwort vergessen haben, besteht bei Moodle und Webuntis die
-    Möglichkeit, sich ein neues Passwort per Mail zusenden zu lassen.""",
+    info_text_paragraphs = ["""Diese Zugangsdaten erlauben die Anmeldung am iServ-Server und die Rechnernutzung in
+    allen Räumen. Über iServ ist die Anmeldung an der Lernplattform Moodle und der Stundenplan-App Webuntis möglich
+    (Single-Sign-On). Nach der ersten Anmeldung an iServ muss das Passwort geändert werden.""",
     """Weitere Informationen finden Sie im Moodle-Kurs unter
     <a color="blue" href="https://moodle.nibis.de/bbs_osb/course/view.php?id=7">https://moodle.nibis.de/bbs_osb/course/view.php?id=7</a>.
     Bei allen weiteren Fragen können Sie sich gerne bei mir melden.""",
-    """<br/>Viele Grüße<br/>&nbsp;&nbsp;&nbsp;&nbsp;Christian Wichmann<br/>&nbsp;&nbsp;&nbsp;&nbsp;wichmann@bbs-os-brinkstr.de"""]
+    """<br/>Viele Grüße<br/>&nbsp;&nbsp;&nbsp;&nbsp;Christian Wichmann<br/>&nbsp;&nbsp;&nbsp;&nbsp;wichmann@bbs-brinkstrasse.de"""]
     # building document
     doc = SimpleDocTemplate(output_file, author=author, title=title)
     story = []
