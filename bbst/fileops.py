@@ -153,10 +153,11 @@ def write_nbc_file(teacher_list, output_file='NBC.csv'):
     if os.path.exists(output_file):
         logger.warning('Output file already exists, will be overwritten...')
     with open(output_file, 'w', newline='', encoding='utf-8') as csvfile:
-        output_file_writer = csv.writer(csvfile, delimiter=',')
+        output_file_writer = csv.writer(csvfile, delimiter=';')
         output_file_writer.writerow(('firstName', 'lastName', 'email', 'birthday', 'class'))
+        blacklist = ['IHK', 'Systeme']
         for t in teacher_list:
-            if t.added:
+            if not t.deleted and t.first_name not in blacklist:
                 output_file_writer.writerow((t.first_name, t.last_name, t.email, '', ''))
 
 def write_iserv_file(teacher_list, output_file):
